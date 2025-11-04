@@ -33,8 +33,21 @@ const DataTable: React.FC<DataTableProps> = ({
   const [editValue, setEditValue] = useState<string>('');
   const [draggedRow, setDraggedRow] = useState<number | null>(null);
   const [dragOverRow, setDragOverRow] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const rowsPerPage = 30;
 
   const visibleColumns = columns.filter(col => col.visible).sort((a, b) => a.order - b.order);
+
+  // Calcular datos paginados
+  const totalPages = Math.ceil(data.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, data.length);
+  const paginatedData = data.slice(startIndex, endIndex);
+
+  // Resetear a página 1 cuando cambian los datos
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [data.length]);
 
   const handleCellDoubleClick = (rowId: string, columnId: string, currentValue: any) => {
     setEditingCell({ rowId, col: columnId });
@@ -167,7 +180,8 @@ const DataTable: React.FC<DataTableProps> = ({
                 </td>
               </tr>
             ) : (
-              data.map((row, rowIndex) => {
+              paginatedData.map((row, relativeIndex) => {
+                const rowIndex = startIndex + relativeIndex;
                 const rowId = row._rowId || `row_${rowIndex}`;
                 const isDragging = draggedRow === rowIndex;
                 const isDragOver = dragOverRow === rowIndex;
@@ -238,21 +252,66 @@ const DataTable: React.FC<DataTableProps> = ({
 
       {data.length > 0 && (
         <div className="table-footer">
-          <span className="table-info">
-            Mostrando {data.length} {data.length === 1 ? 'fila' : 'filas'}
-            {isFiltered && ` de ${allData.length}`} · {visibleColumns.length} {visibleColumns.length === 1 ? 'columna' : 'columnas'}
-            {sortColumn && (
-              <span className="sort-indicator">
-                · Ordenado por {columns.find(c => c.id === sortColumn)?.name} {sortDirection === 'asc' ? '↑' : '↓'}
+          <div className="footer-left">
+            <span className="table-info">
+              Mostrando {startIndex + 1}-{endIndex} de {data.length} {data.length === 1 ? 'fila' : 'filas'}
+              {isFiltered && ` (filtradas de ${allData.length})`} · {visibleColumns.length} {visibleColumns.length === 1 ? 'columna' : 'columnas'}
+              {sortColumn && (
+                <span className="sort-indicator">
+                  · Ordenado por {columns.find(c => c.id === sortColumn)?.name} {sortDirection === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </span>
+          </div>
+          
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                title="Primera página"
+              >
+                ««
+              </button>
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                title="Anterior"
+              >
+                ‹
+              </button>
+              
+              <span className="pagination-info">
+                Página {currentPage} de {totalPages}
               </span>
-            )}
-          </span>
+              
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                title="Siguiente"
+              >
+                ›
+              </button>
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                title="Última página"
+              >
+                »»
+              </button>
+            </div>
+          )}
+          
           <span className="table-hint">
             {isFiltered 
-              ? '🔍 Búsqueda activa · Limpia para reordenar filas'
+              ? '🔍 Búsqueda activa'
               : sortColumn 
-                ? '💡 Doble clic para editar · Ordenamiento activo'
-                : '💡 Doble clic para editar · Arrastra para reordenar'
+                ? '💡 Doble clic para editar'
+                : '💡 Arrastra filas para reordenar'
             }
           </span>
         </div>

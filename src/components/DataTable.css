@@ -171,8 +171,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   padding: 1rem 1.5rem;
   background: #fafafa;
+  flex-wrap: wrap;
+}
+
+.footer-left {
+  flex: 1;
+  min-width: 200px;
 }
 
 .table-info {
@@ -188,6 +195,48 @@
 .sort-indicator {
   color: #3b82f6;
   font-weight: 500;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Scrollbar personalizado */
@@ -212,12 +261,32 @@
 @media (max-width: 768px) {
   .table-footer {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .footer-left {
+    order: 1;
+  }
+
+  .pagination {
+    order: 2;
+    justify-content: center;
   }
 
   .table-hint {
-    display: none;
+    order: 3;
+    text-align: center;
+  }
+
+  .pagination-info {
+    padding: 0 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .pagination-btn {
+    min-width: 36px;
+    height: 36px;
   }
 }
 
