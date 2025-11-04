@@ -246,26 +246,91 @@
   margin-top: 2rem;
 }
 
-.preview-box {
-  background: #1f2937;
+.preview-table-container {
+  background: white;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0;
   margin-bottom: 0.5rem;
   overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
-.preview-box pre {
-  color: #d1d5db;
-  font-family: 'Courier New', monospace;
+.preview-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 0.8125rem;
-  line-height: 1.6;
-  margin: 0;
-  white-space: pre;
+}
+
+.preview-table thead {
+  position: sticky;
+  top: 0;
+  background: #f3f4f6;
+  z-index: 1;
+}
+
+.preview-table th {
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.preview-table td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.preview-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.preview-table tbody tr:nth-child(even) {
+  background-color: #fafafa;
 }
 
 .preview-note {
   color: #6b7280;
   font-size: 0.8125rem;
+  text-align: center;
+  display: block;
+}
+
+/* Scrollbar para preview table */
+.preview-table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.preview-table-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.preview-table-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.preview-table-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 .modal-footer {

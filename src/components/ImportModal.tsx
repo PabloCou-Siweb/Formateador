@@ -123,16 +123,40 @@ const ImportModal: React.FC<ImportModalProps> = ({
     onClose();
   };
 
-  // Vista previa de las primeras líneas
-  const getPreview = () => {
+  // Vista previa de las primeras líneas en formato tabla
+  const getPreviewData = () => {
     const activeDelimiter = delimiter === 'custom' ? customDelimiter : delimiter;
-    if (!activeDelimiter) return 'Selecciona un delimitador para ver la vista previa';
+    if (!activeDelimiter) return null;
 
-    const lines = fileContent.trim().split('\n').slice(0, 5);
-    return lines.map(line => {
-      const values = line.split(activeDelimiter).map(v => v.trim());
-      return values.join(' | ');
-    }).join('\n');
+    const lines = fileContent.trim().split('\n').slice(0, 6); // Header + 5 filas
+    if (lines.length === 0) return null;
+
+    // Función simplificada de parseo para preview
+    const parsePreviewLine = (line: string): string[] => {
+      const values: string[] = [];
+      let currentValue = '';
+      let insideQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const nextChar = line[i + 1];
+
+        if (char === '"') {
+          insideQuotes = !insideQuotes;
+          if (!removeQuotes) currentValue += char;
+        } else if (char === activeDelimiter && !insideQuotes) {
+          values.push(trimSpaces ? currentValue.trim() : currentValue);
+          currentValue = '';
+        } else {
+          currentValue += char;
+        }
+      }
+
+      values.push(trimSpaces ? currentValue.trim() : currentValue);
+      return values;
+    };
+
+    return lines.map(line => parsePreviewLine(line));
   };
 
   return (
@@ -270,10 +294,39 @@ const ImportModal: React.FC<ImportModalProps> = ({
 
           <div className="preview-section">
             <h3>Vista Previa</h3>
-            <div className="preview-box">
-              <pre>{getPreview()}</pre>
+            <div className="preview-table-container">
+              {(() => {
+                const previewData = getPreviewData();
+                if (!previewData || previewData.length === 0) {
+                  return <p className="preview-empty">Selecciona un delimitador para ver la vista previa</p>;
+                }
+
+                const headers = hasHeaders ? previewData[0] : previewData[0].map((_, i) => `Columna ${i + 1}`);
+                const rows = hasHeaders ? previewData.slice(1) : previewData;
+
+                return (
+                  <table className="preview-table">
+                    <thead>
+                      <tr>
+                        {headers.map((header, i) => (
+                          <th key={i}>{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, rowIndex) => (
+                        <tr key={rowIndex}>
+                          {row.map((cell, cellIndex) => (
+                            <td key={cellIndex}>{cell}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              })()}
             </div>
-            <small className="preview-note">Mostrando las primeras 5 líneas</small>
+            <small className="preview-note">Mostrando las primeras 5 filas de {fileContent.split('\n').length}</small>
           </div>
         </div>
 
