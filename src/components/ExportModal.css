@@ -117,6 +117,82 @@
   transition: all 0.15s ease;
 }
 
+.export-delimiter-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.export-delimiter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.export-delimiter-option:hover {
+  border-color: #d1d5db;
+  background: #fafafa;
+}
+
+.export-delimiter-option.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.export-delimiter-option input[type="radio"] {
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.export-delimiter-option span {
+  font-size: 0.875rem;
+  color: #111827;
+  font-weight: 500;
+}
+
+.export-custom-delimiter-field {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.export-custom-delimiter-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.export-custom-delimiter-field input {
+  padding: 0.6rem 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.export-custom-delimiter-field input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.export-custom-delimiter-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.export-custom-delimiter-error {
+  font-size: 0.75rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
 .format-option:hover {
   border-color: #d1d5db;
   background: #fafafa;
@@ -371,6 +447,14 @@
   background: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.btn-export:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  opacity: 0.8;
 }
 
 .btn-export:active {

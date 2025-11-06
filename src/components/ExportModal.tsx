@@ -2,13 +2,22 @@ import React, { useState } from 'react';
 import { Column, TableData, FormatConfig } from '../types';
 import './ExportModal.css';
 
+type ExportFormat = 'csv' | 'excel' | 'html' | 'pdf';
+type DelimiterOption = 'comma' | 'semicolon' | 'hash' | 'pipe' | 'tab' | 'custom';
+
+export interface ExportOptions {
+  format: ExportFormat;
+  rowsPerChunk: number;
+  csvDelimiter?: string;
+}
+
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   columns: Column[];
   data: TableData[];
   formatConfig: FormatConfig;
-  onExport: (format: 'csv' | 'excel' | 'html' | 'pdf', chunks: number) => void;
+  onExport: (options: ExportOptions) => void;
 }
 
 const ExportModal: React.FC<ExportModalProps> = ({
@@ -21,15 +30,71 @@ const ExportModal: React.FC<ExportModalProps> = ({
 }) => {
   const [exportInChunks, setExportInChunks] = useState<boolean>(false);
   const [rowsPerChunk, setRowsPerChunk] = useState<number>(1000);
-  const [selectedFormat, setSelectedFormat] = useState<'csv' | 'excel' | 'html' | 'pdf'>('excel');
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('excel');
+  const [delimiterOption, setDelimiterOption] = useState<DelimiterOption>('comma');
+  const [customDelimiter, setCustomDelimiter] = useState<string>('');
+  const [customDelimiterError, setCustomDelimiterError] = useState<string | null>(null);
+
+  const delimiterPresets: Record<DelimiterOption, { label: string; value: string; summaryLabel: string }> = {
+    comma: { label: 'Coma (,)', value: ',', summaryLabel: ',' },
+    semicolon: { label: 'Punto y coma (;)', value: ';', summaryLabel: ';' },
+    hash: { label: 'Numeral (#)', value: '#', summaryLabel: '#' },
+    pipe: { label: 'Barra vertical (|)', value: '|', summaryLabel: '|' },
+    tab: { label: 'Tabulación', value: '	', summaryLabel: 'Tab' },
+    custom: { label: 'Personalizado', value: '', summaryLabel: 'Personalizado' },
+  };
+
+  const delimiterOptionsOrder: DelimiterOption[] = ['comma', 'semicolon', 'hash', 'pipe', 'tab', 'custom'];
+
+  const resolveDelimiterValue = () => {
+    if (delimiterOption === 'custom') {
+      return customDelimiter;
+    }
+    return delimiterPresets[delimiterOption].value;
+  };
+
+  const resolveDelimiterSummary = () => {
+    if (delimiterOption === 'custom') {
+      return customDelimiter ? customDelimiter : 'Personalizado';
+    }
+    return delimiterPresets[delimiterOption].summaryLabel;
+  };
+
+  const handleDelimiterOptionChange = (option: DelimiterOption) => {
+    setDelimiterOption(option);
+    if (option !== 'custom') {
+      setCustomDelimiterError(null);
+    }
+  };
+
+  const handleCustomDelimiterChange = (value: string) => {
+    setCustomDelimiter(value);
+    if (customDelimiterError) {
+      setCustomDelimiterError(null);
+    }
+  };
 
   if (!isOpen) return null;
 
   const totalRows = data.length;
   const numberOfChunks = exportInChunks ? Math.ceil(totalRows / rowsPerChunk) : 1;
+  const isCustomDelimiterSelected = selectedFormat === 'csv' && delimiterOption === 'custom';
+  const isExportDisabled = isCustomDelimiterSelected && !customDelimiter;
 
   const handleExport = () => {
-    onExport(selectedFormat, exportInChunks ? rowsPerChunk : 0);
+    if (selectedFormat === 'csv' && delimiterOption === 'custom' && !customDelimiter) {
+      setCustomDelimiterError('Introduce un separador personalizado');
+      return;
+    }
+
+    const csvDelimiter = selectedFormat === 'csv' ? resolveDelimiterValue() : undefined;
+
+    setCustomDelimiterError(null);
+    onExport({
+      format: selectedFormat,
+      rowsPerChunk: exportInChunks ? rowsPerChunk : 0,
+      csvDelimiter,
+    });
     onClose();
   };
 
@@ -80,6 +145,47 @@ const ExportModal: React.FC<ExportModalProps> = ({
               ))}
             </div>
           </div>
+
+          {selectedFormat === 'csv' && (
+            <div className="export-section">
+              <h3>Separador CSV</h3>
+              <div className="export-delimiter-options">
+                {delimiterOptionsOrder.map((option) => (
+                  <label
+                    key={option}
+                    className={`export-delimiter-option ${delimiterOption === option ? 'active' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="delimiter"
+                      value={option}
+                      checked={delimiterOption === option}
+                      onChange={(e) => handleDelimiterOptionChange(e.target.value as DelimiterOption)}
+                    />
+                    <span>{delimiterPresets[option].label}</span>
+                  </label>
+                ))}
+              </div>
+
+              {delimiterOption === 'custom' && (
+                <div className="export-custom-delimiter-field">
+                  <label htmlFor="custom-delimiter">Separador personalizado</label>
+                  <input
+                    id="custom-delimiter"
+                    type="text"
+                    value={customDelimiter}
+                    onChange={(e) => handleCustomDelimiterChange(e.target.value)}
+                    placeholder="Ej: ::"
+                    maxLength={5}
+                  />
+                  <p className="export-custom-delimiter-hint">Puedes usar hasta 5 caracteres.</p>
+                  {customDelimiterError && (
+                    <p className="export-custom-delimiter-error">{customDelimiterError}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="export-section">
             <div className="chunk-header">
@@ -147,7 +253,11 @@ const ExportModal: React.FC<ExportModalProps> = ({
             </div>
             <div className="summary-item">
               <span className="summary-label">Formato:</span>
-              <span className="summary-value">{selectedFormat.toUpperCase()}</span>
+            <span className="summary-value">
+              {selectedFormat === 'csv'
+                ? `CSV (${resolveDelimiterSummary()})`
+                : selectedFormat.toUpperCase()}
+            </span>
             </div>
             <div className="summary-item">
               <span className="summary-label">Total de filas:</span>
@@ -160,7 +270,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
           <button className="btn-cancel" onClick={onClose}>
             Cancelar
           </button>
-          <button className="btn-export" onClick={handleExport}>
+          <button className="btn-export" onClick={handleExport} disabled={isExportDisabled}>
             <img src="/img/export-icon.png" alt="" width="16" height="16" />
             Exportar {numberOfChunks > 1 ? `${numberOfChunks} Archivos` : 'Archivo'}
           </button>

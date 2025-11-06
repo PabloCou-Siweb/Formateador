@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ImportModal from './ImportModal';
-import ExportModal from './ExportModal';
+import ExportModal, { ExportOptions } from './ExportModal';
 
 interface ToolbarProps {
   onImport: (columns: Column[], data: TableData[]) => void;
@@ -57,15 +57,17 @@ const Toolbar: React.FC<ToolbarProps> = ({
     onImport(importedColumns, importedData);
   };
 
-  const handleExportWithConfig = (format: 'csv' | 'excel' | 'html' | 'pdf', rowsPerChunk: number) => {
+  const handleExportWithConfig = ({ format, rowsPerChunk, csvDelimiter }: ExportOptions) => {
     if (!hasData) return;
 
-    const chunks = rowsPerChunk > 0 ? Math.ceil(data.length / rowsPerChunk) : 1;
+    const effectiveRowsPerChunk = rowsPerChunk > 0 ? rowsPerChunk : 0;
+    const chunks = effectiveRowsPerChunk > 0 ? Math.ceil(data.length / effectiveRowsPerChunk) : 1;
+    const delimiter = format === 'csv' ? (csvDelimiter && csvDelimiter.length > 0 ? csvDelimiter : ',') : ',';
 
     if (chunks === 1) {
       // Exportar todo en un archivo
       switch (format) {
-        case 'csv': handleExportCSV(); break;
+        case 'csv': handleExportCSV(undefined, undefined, undefined, delimiter); break;
         case 'excel': handleExportExcel(); break;
         case 'html': handleExportHTML(); break;
         case 'pdf': handleExportPDF(); break;
@@ -73,12 +75,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
     } else {
       // Exportar en múltiples archivos
       for (let i = 0; i < chunks; i++) {
-        const start = i * rowsPerChunk;
-        const end = Math.min(start + rowsPerChunk, data.length);
+        const start = i * effectiveRowsPerChunk;
+        const end = Math.min(start + effectiveRowsPerChunk, data.length);
         const chunkData = data.slice(start, end);
 
         switch (format) {
-          case 'csv': handleExportCSVChunk(chunkData, i + 1, chunks); break;
+          case 'csv': handleExportCSVChunk(chunkData, i + 1, chunks, delimiter); break;
           case 'excel': handleExportExcelChunk(chunkData, i + 1, chunks); break;
           case 'html': handleExportHTMLChunk(chunkData, i + 1, chunks); break;
           case 'pdf': handleExportPDFChunk(chunkData, i + 1, chunks); break;
@@ -87,19 +89,19 @@ const Toolbar: React.FC<ToolbarProps> = ({
     }
   };
 
-  const handleExportCSV = (chunkData?: TableData[], fileNumber?: number, totalChunks?: number) => {
+  const handleExportCSV = (chunkData?: TableData[], fileNumber?: number, totalChunks?: number, delimiter: string = ',') => {
     if (!hasData) return;
 
     const exportData = chunkData || data;
     const visibleColumns = columns.filter(col => col.visible).sort((a, b) => a.order - b.order);
-    let csv = visibleColumns.map(col => `"${col.name}"`).join(',') + '\n';
+    let csv = visibleColumns.map(col => `"${col.name}"`).join(delimiter) + '\n';
     
     exportData.forEach(row => {
       const values = visibleColumns.map(col => {
         const value = row[col.id] ?? '';
         return `"${String(value).replace(/"/g, '""')}"`;
       });
-      csv += values.join(',') + '\n';
+      csv += values.join(delimiter) + '\n';
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -113,8 +115,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
     URL.revokeObjectURL(link.href);
   };
 
-  const handleExportCSVChunk = (chunkData: TableData[], fileNumber: number, totalChunks: number) => {
-    handleExportCSV(chunkData, fileNumber, totalChunks);
+  const handleExportCSVChunk = (chunkData: TableData[], fileNumber: number, totalChunks: number, delimiter: string) => {
+    handleExportCSV(chunkData, fileNumber, totalChunks, delimiter);
   };
 
   const handleExportHTML = (chunkData?: TableData[], fileNumber?: number, totalChunks?: number) => {
