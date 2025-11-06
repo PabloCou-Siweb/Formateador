@@ -34,6 +34,10 @@ const DataTable: React.FC<DataTableProps> = ({
   const [draggedRow, setDraggedRow] = useState<number | null>(null);
   const [dragOverRow, setDragOverRow] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [editingHeader, setEditingHeader] = useState<string | null>(null);
+  const [headerEditValue, setHeaderEditValue] = useState<string>('');
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const rowsPerPage = 30;
 
   const visibleColumns = columns.filter(col => col.visible).sort((a, b) => a.order - b.order);
@@ -54,10 +58,64 @@ const DataTable: React.FC<DataTableProps> = ({
     setEditValue(String(currentValue || ''));
   };
 
+  const handleHeaderDoubleClick = (column: Column) => {
+    setEditingHeader(column.id);
+    setHeaderEditValue(column.name);
+  };
+
   const handleCellBlur = () => {
     if (editingCell) {
       onEditCell(editingCell.rowId, editingCell.col, editValue);
       setEditingCell(null);
+    }
+  };
+
+  const commitHeaderEdit = () => {
+    if (!editingHeader) return;
+
+    const originalColumn = columns.find(col => col.id === editingHeader);
+    if (!originalColumn) {
+      setEditingHeader(null);
+      return;
+    }
+
+    const trimmedValue = headerEditValue.trim();
+
+    if (!trimmedValue) {
+      setHeaderEditValue(originalColumn.name);
+      setEditingHeader(null);
+      return;
+    }
+
+    if (trimmedValue === originalColumn.name) {
+      setEditingHeader(null);
+      return;
+    }
+
+    const updatedColumns = columns.map(col =>
+      col.id === editingHeader ? { ...col, name: trimmedValue } : col
+    );
+
+    onColumnsUpdate(updatedColumns);
+    setEditingHeader(null);
+  };
+
+  const handleHeaderBlur = () => {
+    commitHeaderEdit();
+  };
+
+  const handleHeaderKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitHeaderEdit();
+    } else if (e.key === 'Escape') {
+      if (editingHeader) {
+        const originalColumn = columns.find(col => col.id === editingHeader);
+        if (originalColumn) {
+          setHeaderEditValue(originalColumn.name);
+        }
+      }
+      setEditingHeader(null);
     }
   };
 
@@ -67,6 +125,70 @@ const DataTable: React.FC<DataTableProps> = ({
     } else if (e.key === 'Escape') {
       setEditingCell(null);
     }
+  };
+
+  const handleHeaderDragStart = (e: React.DragEvent, columnId: string) => {
+    setDraggedColumn(columnId);
+    setDragOverColumn(columnId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleHeaderDragOver = (e: React.DragEvent, columnId: string) => {
+    e.preventDefault();
+    if (draggedColumn && columnId !== draggedColumn) {
+      e.dataTransfer.dropEffect = 'move';
+      setDragOverColumn(columnId);
+    }
+  };
+
+  const handleHeaderDragLeave = () => {
+    setDragOverColumn(null);
+  };
+
+  const handleHeaderDrop = (e: React.DragEvent, targetColumnId: string) => {
+    e.preventDefault();
+
+    if (!draggedColumn || draggedColumn === targetColumnId) {
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+
+    const sortedColumns = [...columns].sort((a, b) => a.order - b.order);
+    const visibleColumnIds = sortedColumns.filter(col => col.visible).map(col => col.id);
+
+    const fromIndex = visibleColumnIds.indexOf(draggedColumn);
+    const toIndex = visibleColumnIds.indexOf(targetColumnId);
+
+    if (fromIndex === -1 || toIndex === -1) {
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+
+    const updatedVisibleIds = [...visibleColumnIds];
+    const [movedId] = updatedVisibleIds.splice(fromIndex, 1);
+    updatedVisibleIds.splice(toIndex, 0, movedId);
+
+    const hiddenColumns = sortedColumns.filter(col => !col.visible);
+    const reorderedColumns = [
+      ...updatedVisibleIds.map(id => sortedColumns.find(col => col.id === id)).filter(Boolean) as Column[],
+      ...hiddenColumns,
+    ];
+
+    const updatedColumns = reorderedColumns.map((col, index) => ({
+      ...col,
+      order: index,
+    }));
+
+    onColumnsUpdate(updatedColumns);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  };
+
+  const handleHeaderDragEnd = () => {
+    setDraggedColumn(null);
+    setDragOverColumn(null);
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -155,6 +277,8 @@ const DataTable: React.FC<DataTableProps> = ({
     };
   };
 
+  const canDragHeaders = !editingHeader && visibleColumns.length > 1;
+
   return (
     <div className="data-table-container">
       <div className="table-wrapper">
@@ -165,8 +289,35 @@ const DataTable: React.FC<DataTableProps> = ({
                 <th
                   key={column.id}
                   style={getHeaderStyle(column)}
+                  onDoubleClick={() => handleHeaderDoubleClick(column)}
+                  className={[
+                    'editable-header',
+                    editingHeader === column.id ? 'is-editing' : '',
+                    draggedColumn === column.id ? 'is-dragging' : '',
+                    dragOverColumn === column.id && draggedColumn !== column.id ? 'is-drag-over' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  draggable={canDragHeaders}
+                  onDragStart={(e) => canDragHeaders && handleHeaderDragStart(e, column.id)}
+                  onDragOver={(e) => canDragHeaders && handleHeaderDragOver(e, column.id)}
+                  onDragLeave={() => canDragHeaders && handleHeaderDragLeave()}
+                  onDrop={(e) => canDragHeaders && handleHeaderDrop(e, column.id)}
+                  onDragEnd={() => canDragHeaders && handleHeaderDragEnd()}
                 >
-                  {column.name}
+                  {editingHeader === column.id ? (
+                    <input
+                      type="text"
+                      value={headerEditValue}
+                      onChange={(e) => setHeaderEditValue(e.target.value)}
+                      onBlur={handleHeaderBlur}
+                      onKeyDown={handleHeaderKeyDown}
+                      autoFocus
+                      className="header-input"
+                    />
+                  ) : (
+                    <span>{column.name}</span>
+                  )}
                 </th>
               ))}
               <th style={getHeaderStyle({ alignment: 'center' } as Column)}>ACCIONES</th>

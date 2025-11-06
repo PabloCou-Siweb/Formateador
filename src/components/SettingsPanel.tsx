@@ -107,14 +107,26 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       },
     },
     {
-      name: 'Oscuro',
+      name: 'Verde',
       config: {
-        headerBgColor: '#1f2937',
+        headerBgColor: '#10b981',
         headerTextColor: '#ffffff',
-        rowBgColor: '#374151',
-        alternateRowBgColor: '#4b5563',
-        borderColor: '#6b7280',
+        rowBgColor: '#ffffff',
+        alternateRowBgColor: '#ecfdf5',
+        borderColor: '#6ee7b7',
         showBorders: false,
+      },
+    },
+    {
+      name: 'Con Bordes',
+      config: {
+        headerBgColor: '#1e293b',
+        headerTextColor: '#ffffff',
+        rowBgColor: '#ffffff',
+        alternateRowBgColor: '#f8fafc',
+        borderColor: '#cbd5e1',
+        showBorders: true,
+        borderWidth: 1,
       },
     },
   ];

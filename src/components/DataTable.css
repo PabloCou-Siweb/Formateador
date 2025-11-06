@@ -72,6 +72,44 @@
   white-space: nowrap;
 }
 
+.editable-header {
+  cursor: text;
+  position: relative;
+  user-select: none;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.editable-header.is-editing {
+  cursor: default;
+}
+
+.editable-header.is-dragging {
+  opacity: 0.5;
+}
+
+.editable-header.is-drag-over {
+  box-shadow: inset 0 0 0 2px #3b82f6;
+}
+
+.editable-header span {
+  display: inline-block;
+  width: 100%;
+}
+
+.header-input {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border: 2px solid #3b82f6;
+  border-radius: 4px;
+  font-size: inherit;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  background: white;
+  color: inherit;
+  outline: none;
+}
+
 .data-table td {
   transition: background-color 0.15s ease;
 }
